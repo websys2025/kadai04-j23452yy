@@ -6,8 +6,19 @@
     </head>
     <body>
         <h1 id="vending-machine">自動販売機システム</h1>
+        <p id="money_display"></p>
         <table id="item_area" border="1"></table>
         <script>
+            // 初期所持金
+            let money = 1000;
+
+            // 所持金表示更新関数
+            function updateMoneyDisplay(message = "") {
+                const disp = document.getElementById("money_display");
+                disp.textContent = `所持金: ${money}円 ${message}`;
+            }
+
+            
             // 商品一覧を記録する連想配列の配列
             const items =  [
                 { id: 1, name: "緑茶", price: 140, stock: 5 },
@@ -33,62 +44,54 @@
 
                 // 商品一覧の表示関数
                 static showItemList(list) {
-                    console.log("商品は以下の" + Item.number + "種類です。");
-
-                    // 配列の内容を項目毎に出力
-                    // 課題4-1. ここにコードを書く
-                    for(let i = 0; i < list.length; i){
-                        const item = list[i];
-                        console.log("商品番号: " + item.id + ", 商品名: " + item.name + ", 金額: " + item.price + ", 在庫数: " + item.stock);
-                    }
-                    
-                    console.log(""); // 空行の出力
+                    console.log("商品は以下の" + item_list.length + "種類です。");
+                    list.forEach(item => {
+                        console.log(`商品番号: ${item.id}, 商品名: ${item.name}, 金額: ${item.price}, 在庫数: ${item.stock}`);
+                    });
+                    console.log("");
                 }
                 
                 // 商品購入の関数
                 buyItem() {          
-                    if (this.stock >= 1) { 
-                        console.log("商品番号: "+this.id+", 商品名: "+this.name+"を購入します。");
-                        // 課題4-2. ここにコードを書く
-                        // 購入による商品の在庫削減処理
-                        this.stock--;
-                        
-                        
-                        // 課題4-3. ここにコードを書く
-                        // 在庫用のエレメントを抽出し、HTML内の個数を更新
-                        const stockElem = document.getElementById("stock" + this.id);
-                        stockElem.innerText = this.stock;
-                        console.log("残りは" + this.stock + "個です。");
-                    } else{ 
-                        console.log(this.name+"は商品の在庫がないため購入できません。");
-                }
-            } // End of Item class
+                    if (this.stock < 1) { 
+                        console.log(this.name + "は商品の在庫がないため購入できません。");
+                        updateMoneyDisplay(this.name + "は在庫なしで購入できません。");
+                        return;
+                    }
+                    if (money < this.price) {
+                        console.log(this.name + "は所持金不足で購入できません。");
+                        updateMoneyDisplay("所持金不足で" + this.name + "を購入できません。");
+                        return;
+                    }
+                    // 課題4-2. ここにコードを書く
+                    // 購入による商品の在庫削減処理
+                    this.stock--;
+                    money -= this.price;
+                    const stockCell = document.getElementById("stock" + this.id);
+                    if (stockCell) stockCell.textContent = this.stock;
 
+                    console.log(`商品番号: ${this.id}, 商品名: ${this.name}を購入します。残りは${this.stock}個です。`);
+                    updateMoneyDisplay(`${this.name}を購入しました。残金は${money}円です。`);
+                }
+            }
+                            
             // 商品テーブルのエレメント抽出
             const itemArea = document.getElementById("item_area");
             itemArea.innerHTML += "<tr><th>商品名</th><th>金額</th><th>在庫数</th><th>購入</th></tr>";
 
-            // 配列のオブジェクト作成
-            const item_list = new Array(items.length);
-            const btn = new Array(items.length);
-
-            // 課題4-1. ここにコード書く
-            // 商品オブジェクトの生成
-            for(let i = 0; i < item.length; i++){
+            const item_list = [];
+            for (let i = 0; i < items.length; i++) {
                 const obj = items[i];
-                item_list[i] = new Item(obj.name, obj.price, obj.stock);
-            }
-            
-            // 課題4-2. ここにコードを書く
-            // 商品表の作成
-            for(let i = 0; i < item_list.length; i++){
-                const item = item_list[i];
-                itemArea.innerHTML += "<tr>" +
-                    "<td>" + item.name + "</td>" +
-                    "<td>" + item.price + "円</td>" +
-                    "<td id='stock" + item.id + "'>" + item.stock + "</td>" +
-                    "<td><button id='button" + item.id + "'>購入</button></td>" +
-                    "</tr>";
+                const newItem = new Item(obj.name, obj.price, obj.stock);
+                item_list.push(newItem);
+
+                itemArea.innerHTML += `
+                    <tr>
+                        <td>${newItem.name}</td>
+                        <td>${newItem.price}円</td>
+                        <td id="stock${newItem.id}">${newItem.stock}</td>
+                        <td><button id="button${newItem.id}">購入</button></td>
+                    </tr>`;
             }
 
             // クリックイベント時の購入処理の設定
